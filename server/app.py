@@ -1,13 +1,27 @@
-from flask import Flask, Response, render_template, jsonify
+from flask import Flask, Response, render_template, jsonify, request, make_response
+from flask_pymongo import PyMongo
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import pyaudio
 import wave
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+import openai
+import secrets
 
 app = Flask(__name__)
 
 load_dotenv()
+
+app.config['MONGO_URI'] = 'mongodb+srv://michael:lxsquid@cluster0.ruhmegq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+
+# Generate a secret key if not provided
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", secrets.token_hex(16))
+
+mongo = PyMongo(app)
+jwt = JWTManager(app)
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 transcript = ""
 FORMAT = pyaudio.paInt16
@@ -16,25 +30,52 @@ RATE = 44100
 CHUNK = 1024
 TOTAL_CHUNKS = 500
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 audio1 = pyaudio.PyAudio()
 
-@app.route("/ask_gpt")
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    hashed_password = generate_password_hash(data['password'], method='sha256')
+    mongo.db.users.insert_one({
+        'username': data['username'],
+        'password': hashed_password
+    })
+    return jsonify({'message': 'User registered successfully!'}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = mongo.db.users.find_one({'username': data['username']})
+    
+    if user and check_password_hash(user['password'], data['password']):
+        token = create_access_token(identity={'username': user['username']})
+        response = make_response(jsonify({'message': 'Login successful!', 'token': token}))
+        response.set_cookie('token', token, httponly=True)
+        return response
+
+    return jsonify({'message': 'Invalid username or password'}), 401
+
+@app.route('/profile', methods=['GET'])
+@jwt_required()
+def profile():
+    current_user = get_jwt_identity()
+    return jsonify({'username': current_user['username']}), 200
+
+@app.route("/ask_gpt", methods=['GET'])
 def ask_gpt():
     global transcript
     prompt = transcript
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
         messages=[
             {
                 "role": "user",
                 "content": f"Sort the following text into three categories: Status, Injury, and Treatment. Assume the text is about a patient and they are describing them. The text is in chronological order, so if something later on contradicts something that was said earlier, assume that the thing said latest is correct. Also, if there is no clear injury/status/treatment, put N/A in that row. IF THERE IS NO TEXT, PUT NA FOR ALL 3. PUT IN THIS FORMAT: Status: (status) Injury: (injury) Treatment: (treatment). Here's the text: {prompt}"
             }
-        ],
-        model="gpt-3.5-turbo"
+        ]
     )
-    if "Treatment" not in response.choices[0].message.content:
-        ask_gpt()
-    return jsonify({"response": response.choices[0].message.content})
+    result = response.choices[0].message['content']
+    return jsonify({"response": result})
 
 def generate_wav_header(sample_rate, bits_per_sample, channels):
     datasize = 2000 * 10**6
@@ -56,12 +97,12 @@ def generate_wav_header(sample_rate, bits_per_sample, channels):
 def transcribe_audio():
     global transcript
     with open("audio/combined_audio.wav", "rb") as audio_file:
-        transcription = client.audio.transcriptions.create(
+        transcription = openai.Audio.transcribe(
             model="whisper-1",
             file=audio_file
         )
-    transcript += transcription.text
-    return transcription.text
+    transcript += transcription['text']
+    return transcription['text']
 
 def save_audio(filename, audio_data):
     with wave.open(filename, 'wb') as wf:
