@@ -1,25 +1,24 @@
-from flask import Flask, Response, render_template, jsonify, request, make_response
-from flask_pymongo import PyMongo
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask import Flask, Response, render_template, jsonify, request, make_response, session, redirect, url_for
 import pyaudio
 import wave
 import os
 from dotenv import load_dotenv
 import openai
-import secrets
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from flask_cors import CORS
 
 app = Flask(__name__)
 
 load_dotenv()
 
-app.config['MONGO_URI'] = 'mongodb+srv://michael:lxsquid@cluster0.ruhmegq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+# Enable CORS
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Generate a secret key if not provided
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", secrets.token_hex(16))
-
-mongo = PyMongo(app)
-jwt = JWTManager(app)
+# MongoDB client setup
+uri = "mongodb+srv://michael:lxsquid@cluster0.ruhmegq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+client = MongoClient(uri, server_api=ServerApi('1'))
+db = client.get_database('MedRelay')
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -35,31 +34,44 @@ audio1 = pyaudio.PyAudio()
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    hashed_password = generate_password_hash(data['password'], method='sha256')
-    mongo.db.users.insert_one({
+    existing_user = db.users.find_one({'$or': [{'email': data['email']}, {'username': data['username']}]})
+    if existing_user:
+        return jsonify({'message': 'Email or username already exists'}), 400
+    db.users.insert_one({
+        'email': data['email'],
         'username': data['username'],
-        'password': hashed_password
+        'password': data['password']
     })
     return jsonify({'message': 'User registered successfully!'}), 201
 
-@app.route('/login', methods=['POST'])
+@app.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
-    user = mongo.db.users.find_one({'username': data['username']})
-    
-    if user and check_password_hash(user['password'], data['password']):
-        token = create_access_token(identity={'username': user['username']})
-        response = make_response(jsonify({'message': 'Login successful!', 'token': token}))
-        response.set_cookie('token', token, httponly=True)
-        return response
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
 
-    return jsonify({'message': 'Invalid username or password'}), 401
+    if not username or not password:
+        return jsonify({"status": "error", "message": "Username and password are required"}), 400
+
+    user = db.users.find_one({"username": username})
+    if not user:
+        return jsonify({"status": "error", "message": "User not found"}), 404
+    if user["password"] == password:
+        response = jsonify({"status": "success", "token": "dummy-token"})
+        return response
+    else:
+        return jsonify({"status": "error", "message": "Incorrect password"}), 401
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('username', None)
+    return jsonify({'message': 'Logged out successfully!'}), 200
 
 @app.route('/profile', methods=['GET'])
-@jwt_required()
 def profile():
-    current_user = get_jwt_identity()
-    return jsonify({'username': current_user['username']}), 200
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return jsonify({'username': session['username']}), 200
 
 @app.route("/ask_gpt", methods=['GET'])
 def ask_gpt():
@@ -132,6 +144,10 @@ def audio_stream():
                 yield chunk_filename
 
     return Response(sound())
+
+@app.route('/hello')
+def hello():
+    return "Hello, World!"
 
 @app.route('/transcript')
 def get_transcript():

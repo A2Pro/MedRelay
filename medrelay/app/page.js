@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Dialog, DialogPanel } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import Cookies from 'js-cookie'
+import { motion } from 'framer-motion'
 
 const navigation = [
   { name: 'Home', href: '#' },
@@ -14,9 +15,13 @@ const navigation = [
 
 export default function Page() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
+  const [authDialogOpen, setAuthDialogOpen] = useState(false)
+  const [isLogin, setIsLogin] = useState(true)
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [message, setMessage] = useState('')
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -31,9 +36,36 @@ export default function Page() {
     const data = await response.json()
     if (response.ok) {
       Cookies.set('token', data.token)
-      setLoginOpen(false)
+      Cookies.set('username', username)
+      setAuthDialogOpen(false)
+      window.location.href = '/admin'
     } else {
-      alert(data.message)
+      setMessage(data.message)
+    }
+  }
+
+  const handleSignUp = async (e) => {
+    e.preventDefault()
+    if (password !== confirmPassword) {
+      setMessage('Passwords do not match')
+      return
+    }
+    const response = await fetch('http://localhost:5000/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, username, password }),
+    })
+
+    const data = await response.json()
+    if (response.ok) {
+      Cookies.set('token', data.token)
+      Cookies.set('username', username)
+      setAuthDialogOpen(false)
+      window.location.href = '/admin'
+    } else {
+      setMessage(data.message)
     }
   }
 
@@ -67,7 +99,7 @@ export default function Page() {
             ))}
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-            <button onClick={() => setLoginOpen(true)} className="text-sm font-semibold leading-6 text-gray-900">
+            <button onClick={() => setAuthDialogOpen(true)} className="text-sm font-semibold leading-6 text-gray-900">
               Log in <span aria-hidden="true">&rarr;</span>
             </button>
           </div>
@@ -106,7 +138,7 @@ export default function Page() {
                 </div>
                 <div className="py-6">
                   <button
-                    onClick={() => setLoginOpen(true)}
+                    onClick={() => setAuthDialogOpen(true)}
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                   >
                     Log in
@@ -118,43 +150,118 @@ export default function Page() {
         </Dialog>
       </header>
 
-      <Dialog open={loginOpen} onClose={() => setLoginOpen(false)} className="fixed inset-0 z-50 flex items-center justify-center">
-        <DialogPanel className="w-full max-w-md p-6 bg-white rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Log in to your account</h2>
-          <form onSubmit={handleLogin}>
+      <Dialog
+        open={authDialogOpen}
+        onClose={() => setAuthDialogOpen(false)}
+        className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+        as={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <DialogPanel
+          className="w-full max-w-lg p-8 bg-white rounded-lg shadow"
+          as={motion.div}
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {isLogin ? 'Log in to your account' : 'Sign up for an account'}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setAuthDialogOpen(false)}
+              className="text-gray-400 hover:text-gray-500"
+            >
+              <span className="sr-only">Close</span>
+              <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+            </button>
+          </div>
+          <form onSubmit={isLogin ? handleLogin : handleSignUp}>
+            {!isLogin && (
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <motion.input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  whileFocus={{ scale: 1 }}
+                />
+              </div>
+            )}
             <div className="mb-4">
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Username
               </label>
-              <input
+              <motion.input
                 type="text"
                 id="username"
                 name="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                whileFocus={{ scale: 1 }}
               />
             </div>
-            <div className="mb-6">
+            <div className="mb-4">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <input
+              <motion.input
                 type="password"
                 id="password"
                 name="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                whileFocus={{ scale: 1 }}
               />
             </div>
-            <button
+            {!isLogin && (
+              <div className="mb-6">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <motion.input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  whileFocus={{ scale: 1 }}
+                />
+              </div>
+            )}
+            {message && (
+              <p className="text-sm text-red-600 mb-4">{message}</p>
+            )}
+            <motion.button
               type="submit"
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Log in
-            </button>
+              {isLogin ? 'Log in' : 'Sign up'}
+            </motion.button>
           </form>
+          <p className="mt-4 text-sm text-center text-gray-600">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-indigo-600 font-medium hover:text-indigo-500"
+            >
+              {isLogin ? ' Sign up' : ' Log in'}
+            </button>
+          </p>
         </DialogPanel>
       </Dialog>
 
@@ -173,29 +280,22 @@ export default function Page() {
         </div>
         <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-            <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-              Announcing our next round of funding.{' '}
-              <a href="#" className="font-semibold text-indigo-600">
-                <span className="absolute inset-0" aria-hidden="true" />
-                Read more <span aria-hidden="true">&rarr;</span>
-              </a>
-            </div>
+            <img src="/logo.png" width="300" height="300" alt="Logo"/>
           </div>
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
               Ahead of Emergency
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui lorem cupidatat commodo. Elit sunt amet
-              fugiat veniam occaecat fugiat aliqua.
+              Real-time communication platform for Ambulance sevices to directly connect with nearby Hospitals
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
-              <a
-                href="#"
+            <button
+                onClick={() => setAuthDialogOpen(true)}
                 className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Get started
-              </a>
+              </button>
               <a href="#" className="text-sm font-semibold leading-6 text-gray-900">
                 Learn more <span aria-hidden="true">→</span>
               </a>
