@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcript</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px;
+        }
+
+        .transcription-container, .other-container {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-right: 10px;
+            overflow: auto;
+        }
+
+        .transcription-container h2, .other-container h2 {
+            color: #4CAF50;
+            margin-top: 0;
+        }
+
+        .transcription-container p, .other-container p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Transcript</h1>
+    <div class="container">
+        <div id="liveTranscription" class="transcription-container">
+            <h2>Live Transcription</h2>
+            <p>Loading...</p>
+        </div>
+        <div id="gptResult" class="other-container">
+            <h2>GPT Result</h2>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        function updateLiveTranscription() {
+            fetch('/transcript')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('liveTranscription').innerHTML = `<h2>Live Transcription</h2><p>${data.transcript}</p>`;
+                })
+                .catch(error => console.error('Error fetching live transcription:', error));
+        }
+
+        function updateGptResult() {
+            fetch('/ask_gpt')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('gptResult').innerHTML = `<h2>GPT Result</h2><p>${data.yahoo}</p>`;
+                })
+                .catch(error => console.error('Error fetching gpt:', error));
+        }
+
+        updateLiveTranscription();
+        setInterval(updateLiveTranscription, 2000);
+        updateGptResult();
+        setInterval(updateGptResult, 2000);
+    </script>
+</body>
+</html>
