@@ -122,13 +122,13 @@ def transcribe_audio():
     if not transcriptentry:
         db.transcripts.insert_one({
             "username": session.get("username"),
-            "transcript" : f"Started at {now} from user {session.get("username")}.   {transcript}",
+            "transcript": f"Started at {now} from user {session.get('username')}.   {transcript}",
         })
     else:
         currenttranscript = transcriptentry["transcript"]
         db.transcripts.update_one(
-            {"username" : session.get("username")},
-            {"$set": {"transcript" : currenttranscript + transcription["text"]}}
+            {"username": session.get("username")},
+            {"$set": {"transcript": currenttranscript + transcription["text"]}}
         )
     return transcription['text']
 
