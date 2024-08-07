@@ -1,78 +1,91 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Dialog, DialogPanel } from '@headlessui/react'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import Cookies from 'js-cookie'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from "react";
+import { Dialog, DialogPanel } from "@headlessui/react";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 const navigation = [
-  { name: 'Home', href: '#' },
-  { name: 'Features', href: '#' },
-  { name: 'Developers', href: '#' },
-  { name: 'FAQ', href: '#' },
-]
+  { name: "Home", href: "#" },
+  { name: "Features", href: "#" },
+  { name: "Developers", href: "#" },
+  { name: "FAQ", href: "#" },
+];
 
 export default function Page() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [authDialogOpen, setAuthDialogOpen] = useState(false)
-  const [isLogin, setIsLogin] = useState(true)
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [message, setMessage] = useState('')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to /RoleSelection if token exists
+    const token = Cookies.get("token");
+    if (token) {
+      router.push("/RoleSelection");
+    }
+  }, [router]);
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    const response = await fetch('http://localhost:5000/login', {
-      method: 'POST',
+    e.preventDefault();
+    const response = await fetch("http://localhost:5000/login", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
-    })
+    });
 
-    const data = await response.json()
+    const data = await response.json();
     if (response.ok) {
-      Cookies.set('token', data.token)
-      Cookies.set('username', username)
-      setAuthDialogOpen(false)
-      window.location.href = '/admin'
+      Cookies.set("token", data.token, { expires: 7 }); // Set token with 7 days expiry
+      Cookies.set("username", username, { expires: 7 });
+      setAuthDialogOpen(false);
+      router.push("/RoleSelection");
     } else {
-      setMessage(data.message)
+      setMessage(data.message);
     }
-  }
+  };
 
   const handleSignUp = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match')
-      return
+      setMessage("Passwords do not match");
+      return;
     }
-    const response = await fetch('http://localhost:5000/register', {
-      method: 'POST',
+    const response = await fetch("http://localhost:5000/register", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, username, password }),
-    })
+    });
 
-    const data = await response.json()
+    const data = await response.json();
     if (response.ok) {
-      Cookies.set('token', data.token)
-      Cookies.set('username', username)
-      setAuthDialogOpen(false)
-      window.location.href = '/admin'
+      Cookies.set("token", data.token, { expires: 7 });
+      Cookies.set("username", username, { expires: 7 });
+      setAuthDialogOpen(false);
+      router.push("/RoleSelection");
     } else {
-      setMessage(data.message)
+      setMessage(data.message);
     }
-  }
+  };
 
   return (
     <div className="bg-white">
       <header className="absolute inset-x-0 top-0 z-50">
-        <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
+        <nav
+          aria-label="Global"
+          className="flex items-center justify-between p-6 lg:px-8"
+        >
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5">
               <span className="sr-only">MedRelay</span>
@@ -93,18 +106,29 @@ export default function Page() {
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
             {navigation.map((item) => (
-              <a key={item.name} href={item.href} className="text-sm font-semibold leading-6 text-gray-900">
+              <a
+                key={item.name}
+                href={item.href}
+                className="text-sm font-semibold leading-6 text-gray-900"
+              >
                 {item.name}
               </a>
             ))}
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-            <button onClick={() => setAuthDialogOpen(true)} className="text-sm font-semibold leading-6 text-gray-900">
+            <button
+              onClick={() => setAuthDialogOpen(true)}
+              className="text-sm font-semibold leading-6 text-gray-900"
+            >
               Log in <span aria-hidden="true">&rarr;</span>
             </button>
           </div>
         </nav>
-        <Dialog open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} className="lg:hidden">
+        <Dialog
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          className="lg:hidden"
+        >
           <div className="fixed inset-0 z-50" />
           <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
             <div className="flex items-center justify-between">
@@ -164,11 +188,11 @@ export default function Page() {
           as={motion.div}
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              {isLogin ? 'Log in to your account' : 'Sign up for an account'}
+              {isLogin ? "Log in to your account" : "Sign up for an account"}
             </h2>
             <button
               type="button"
@@ -182,7 +206,10 @@ export default function Page() {
           <form onSubmit={isLogin ? handleLogin : handleSignUp}>
             {!isLogin && (
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email
                 </label>
                 <motion.input
@@ -197,7 +224,10 @@ export default function Page() {
               </div>
             )}
             <div className="mb-4">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Username
               </label>
               <motion.input
@@ -211,7 +241,10 @@ export default function Page() {
               />
             </div>
             <div className="mb-4">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <motion.input
@@ -226,7 +259,10 @@ export default function Page() {
             </div>
             {!isLogin && (
               <div className="mb-6">
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Confirm Password
                 </label>
                 <motion.input
@@ -240,26 +276,24 @@ export default function Page() {
                 />
               </div>
             )}
-            {message && (
-              <p className="text-sm text-red-600 mb-4">{message}</p>
-            )}
+            {message && <p className="text-sm text-red-600 mb-4">{message}</p>}
             <motion.button
               type="submit"
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              {isLogin ? 'Log in' : 'Sign up'}
+              {isLogin ? "Log in" : "Sign up"}
             </motion.button>
           </form>
           <p className="mt-4 text-sm text-center text-gray-600">
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            {isLogin ? "Don't have an account?" : "Already have an account?"}
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
               className="text-indigo-600 font-medium hover:text-indigo-500"
             >
-              {isLogin ? ' Sign up' : ' Log in'}
+              {isLogin ? " Sign up" : " Log in"}
             </button>
           </p>
         </DialogPanel>
@@ -273,30 +307,34 @@ export default function Page() {
           <div
             style={{
               clipPath:
-                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+                "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
             }}
             className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
           />
         </div>
         <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
           <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-            <img src="/logo.png" width="300" height="300" alt="Logo"/>
+            <img src="/logo.png" width="300" height="300" alt="Logo" />
           </div>
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
               Ahead of Emergency
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              Real-time communication platform for Ambulance sevices to directly connect with nearby Hospitals
+              Real-time communication platform for Ambulance services to
+              directly connect with nearby Hospitals
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
-            <button
+              <button
                 onClick={() => setAuthDialogOpen(true)}
                 className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Get started
               </button>
-              <a href="#" className="text-sm font-semibold leading-6 text-gray-900">
+              <a
+                href="#"
+                className="text-sm font-semibold leading-6 text-gray-900"
+              >
                 Learn more <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -309,12 +347,12 @@ export default function Page() {
           <div
             style={{
               clipPath:
-                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+                "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
             }}
             className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
           />
         </div>
       </div>
     </div>
-  )
+  );
 }
