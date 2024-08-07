@@ -7,9 +7,11 @@ import openai
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from flask_cors import CORS
+from datetime import datetime
 
 app = Flask(__name__)
 
+app.secret_key = "eut3grbifu32r83gibfeji3r9eonvj"
 load_dotenv()
 
 # Enable CORS
@@ -58,6 +60,7 @@ def login():
         return jsonify({"status": "error", "message": "User not found"}), 404
     if user["password"] == password:
         response = jsonify({"status": "success", "token": "dummy-token"})
+        session["username"] = username
         return response
     else:
         return jsonify({"status": "error", "message": "Incorrect password"}), 401
@@ -114,6 +117,19 @@ def transcribe_audio():
             file=audio_file
         )
     transcript += transcription['text']
+    transcriptentry = db.transcripts.find_one({"username": session.get("username")})
+    now = datetime.now()
+    if not transcriptentry:
+        db.transcripts.insert_one({
+            "username": session.get("username"),
+            "transcript" : f"Started at {now} from user {session.get("username")}.   {transcript}",
+        })
+    else:
+        currenttranscript = transcriptentry["transcript"]
+        db.transcripts.update_one(
+            {"username" : session.get("username")},
+            {"$set": {"transcript" : currenttranscript + transcription["text"]}}
+        )
     return transcription['text']
 
 def save_audio(filename, audio_data):
@@ -122,6 +138,23 @@ def save_audio(filename, audio_data):
         wf.setsampwidth(audio1.get_sample_size(FORMAT))
         wf.setframerate(RATE)
         wf.writeframes(b''.join(audio_data))
+
+@app.route('/get_transcripts', methods=['GET'])
+def get_transcripts():
+    transcripts = db.transcripts.find()
+    usernames = []
+    transcript_texts = []
+    for entry in transcripts:
+        usernames.append(entry['username'])
+        try:
+            transcript_texts.append(entry['transcript'])
+        except:
+            transcript_texts.append("")
+    return jsonify({
+        'usernames': usernames,
+        'transcripts': transcript_texts
+    })
+
 
 @app.route('/audio')
 def audio_stream():
@@ -161,6 +194,8 @@ def trans():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True, threaded=True, port=5000)
