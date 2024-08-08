@@ -21,7 +21,7 @@ const RecordingPage = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({code}),
+      body: JSON.stringify({ code }),
     });
   };
 
@@ -126,7 +126,7 @@ const RecordingPage = () => {
                 Submit Transcription
               </button>
               <audio controls>
-                <source src="http://localhost:5000/audio" type="audio/x-wav" />
+                <source src={`http://localhost:5000/audio/${code}`} type="audio/x-wav" />
                 Your browser does not support the audio element.
               </audio>
             </div>

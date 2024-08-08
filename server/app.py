@@ -14,6 +14,7 @@ app = Flask(__name__)
 app.secret_key = "eut3grbifu32r83gibfejiijohughuijokkijhugvhjiokjbhvghbjkmjhgvfccgvhbygtfdrxcgfhvy3r9eonvj"
 load_dotenv()
 
+openai.api_key = os.getenv("OPENAI_API_KEY")
 # Enable CORS
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -24,7 +25,6 @@ db = client.get_database('MedRelay')
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-transcript = ""
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
@@ -155,26 +155,24 @@ def set_idamb():
 
     return jsonify({"message": "success"}), 202
 
-def transcribe_audio():
+def transcribe_audio(code):
     global transcript
-    with open(f"audio/{session.get('id')}.wav", "rb") as audio_file:
+    with open(f"audio/{code}.wav", "rb") as audio_file:
         transcription = openai.Audio.transcribe(
             model="whisper-1",
             file=audio_file
         )
-    transcript += transcription['text']
-    transcriptentry = db.transcripts.find_one({"username": session.get("username")})
+    transcriptentry = db.transcripts.find_one({"id": code})
     now = datetime.now()
     if not transcriptentry:
         db.transcripts.insert_one({
-            "id": session["id"],
-            "username": session.get("username"),
-            "transcript": f"Started at {now} from user {session.get('username')}.   {transcript}",
+            "id": code,
+            "transcript": f"Started at {now} from id {code}. {transcription}",
         })
     else:
         currenttranscript = transcriptentry["transcript"]
         db.transcripts.update_one(
-            {"username": session.get("username")},
+            {"id": code},
             {"$set": {"transcript": currenttranscript + transcription["text"]}}
         )
     return transcription['text']
@@ -215,8 +213,8 @@ def get_transcripts():
     })
 
 
-@app.route('/audio')
-def audio_stream():
+@app.route('/audio/<code>')
+def audio_stream(code):
     os.makedirs('audio', exist_ok=True)
     def sound():
         wav_header = generate_wav_header(RATE, 16, CHANNELS)
@@ -228,9 +226,9 @@ def audio_stream():
             audio_data.append(data)
             chunk_counter += 1
             if chunk_counter % TOTAL_CHUNKS == 0:
-                chunk_filename = os.path.join('audio', f'{session.get("id")}.wav')
+                chunk_filename = os.path.join('audio', f'{code}.wav')
                 save_audio(chunk_filename, audio_data)
-                transcribe_audio()
+                transcribe_audio(code)
                 audio_data = []
                 yield chunk_filename
 
