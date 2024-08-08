@@ -125,9 +125,8 @@ const RecordingPage = () => {
               >
                 Submit Transcription
               </button>
-              {/* Audio Player */}
-              <audio controls className="mt-4 w-full">
-                <source src="/audio/sample.wav" type="audio/x-wav;codec=pcm" />
+              <audio controls>
+                <source src="http://localhost:5000/audio" type="audio/x-wav" />
                 Your browser does not support the audio element.
               </audio>
             </div>

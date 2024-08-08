@@ -155,11 +155,9 @@ def set_idamb():
 
     return jsonify({"message": "success"}), 202
 
-
-
 def transcribe_audio():
     global transcript
-    with open(f"audio/{session.get("id")}.wav", "rb") as audio_file:
+    with open(f"audio/{session.get('id')}.wav", "rb") as audio_file:
         transcription = openai.Audio.transcribe(
             model="whisper-1",
             file=audio_file
