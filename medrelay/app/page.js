@@ -1,17 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import TextParallaxContent from "./components/TextParallaxContent";
+import StackCardTestimonials from "./components/StackCardTestimonials";
+import BasicFAQ from "./components/BasicFAQ";
+import ShiftingContactForm from "./components/ShiftingContactForm";
+import CountUpStats from "./components/CountUpStats";
+import Footer from "./components/Footer";
+import { Basic } from "next/font/google";
 
 const navigation = [
-  { name: "Home", href: "#" },
-  { name: "Features", href: "#" },
-  { name: "Developers", href: "#" },
-  { name: "FAQ", href: "#" },
+  { name: "Home", href: "#home" },
+  { name: "Features", href: "#features" },
+  { name: "Testimonials", href: "#testimonials" },
+  { name: "FAQ", href: "#faq" },
 ];
 
 export default function Page() {
@@ -25,8 +32,13 @@ export default function Page() {
   const [message, setMessage] = useState("");
   const router = useRouter();
 
+  // Refs for each section
+  const homeRef = useRef(null);
+  const featuresRef = useRef(null);
+  const testimonialsRef = useRef(null);
+  const faqRef = useRef(null);
+
   useEffect(() => {
-    // Redirect to /RoleSelection if token exists
     const token = Cookies.get("token");
     if (token) {
       router.push("/RoleSelection");
@@ -45,7 +57,7 @@ export default function Page() {
 
     const data = await response.json();
     if (response.ok) {
-      Cookies.set("token", data.token, { expires: 7 }); // Set token with 7 days expiry
+      Cookies.set("token", data.token, { expires: 7 });
       Cookies.set("username", username, { expires: 7 });
       setAuthDialogOpen(false);
       router.push("/RoleSelection");
@@ -79,6 +91,10 @@ export default function Page() {
     }
   };
 
+  const handleNavigationClick = (sectionRef) => {
+    sectionRef.current.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="bg-white">
       <header className="absolute inset-x-0 top-0 z-50">
@@ -90,7 +106,7 @@ export default function Page() {
             <a href="#" className="-m-1.5 p-1.5">
               <span className="sr-only">MedRelay</span>
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                MedRelay
+                MedRelay™
               </span>
             </a>
           </div>
@@ -106,13 +122,23 @@ export default function Page() {
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
             {navigation.map((item) => (
-              <a
+              <button
                 key={item.name}
-                href={item.href}
+                onClick={() =>
+                  handleNavigationClick(
+                    item.name === "Home"
+                      ? homeRef
+                      : item.name === "Features"
+                      ? featuresRef
+                      : item.name === "Testimonials"
+                      ? testimonialsRef
+                      : faqRef
+                  )
+                }
                 className="text-sm font-semibold leading-6 text-gray-900"
               >
                 {item.name}
-              </a>
+              </button>
             ))}
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
@@ -151,13 +177,23 @@ export default function Page() {
               <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
                   {navigation.map((item) => (
-                    <a
+                    <button
                       key={item.name}
-                      href={item.href}
+                      onClick={() =>
+                        handleNavigationClick(
+                          item.name === "Home"
+                            ? homeRef
+                            : item.name === "Features"
+                            ? featuresRef
+                            : item.name === "Testimonials"
+                            ? testimonialsRef
+                            : faqRef
+                        )
+                      }
                       className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                     >
                       {item.name}
-                    </a>
+                    </button>
                   ))}
                 </div>
                 <div className="py-6">
@@ -228,7 +264,7 @@ export default function Page() {
                 htmlFor="username"
                 className="block text-sm font-medium text-gray-700"
               >
-                Username
+                Organization
               </label>
               <motion.input
                 type="text"
@@ -299,7 +335,7 @@ export default function Page() {
         </DialogPanel>
       </Dialog>
 
-      <div className="relative isolate px-6 pt-14 lg:px-8">
+      <div className="relative isolate px-6 pt-14 lg:px-8" ref={homeRef}>
         <div
           aria-hidden="true"
           className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
@@ -318,7 +354,7 @@ export default function Page() {
           </div>
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Ahead of Emergency
+              Ahead of Emergency™
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
               Real-time communication platform for Ambulance services to
@@ -353,6 +389,18 @@ export default function Page() {
           />
         </div>
       </div>
+      <div ref={featuresRef}>
+        <CountUpStats />
+        <TextParallaxContent />
+      </div>
+      <div ref={testimonialsRef}>
+        <StackCardTestimonials />
+      </div>
+      <div ref={faqRef}>
+        <BasicFAQ />
+      </div>
+      <ShiftingContactForm />
+      <Footer />
     </div>
   );
 }

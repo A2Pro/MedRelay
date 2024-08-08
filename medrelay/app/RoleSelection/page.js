@@ -9,7 +9,7 @@ import {
   useMotionValue,
   useSpring,
 } from "framer-motion";
-import { FaAmbulance, FaHospital, FaTimesCircle } from "react-icons/fa"; // Importing FaTimesCircle for the delete button
+import { FaAmbulance, FaHospital, FaTimesCircle } from "react-icons/fa";
 import GradientShadowButton from "../components/GradientShadowButton";
 
 const RoleSelection = () => {
@@ -182,8 +182,8 @@ const Navbar = ({ userName, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link href="/">
-            <span className="text-2xl font-bold text-indigo-600 hover:text-indigo-800">
-              MedRelay
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+              MedRelay™
             </span>
           </Link>
           <div className="flex items-center space-x-4">

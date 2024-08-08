@@ -1,4 +1,3 @@
-// components/GradientShadowButton.js
 import React from "react";
 
 const GradientShadowButton = ({ onClick, children }) => {
