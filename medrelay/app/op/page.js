@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import GradientShadowButton from "../components/GradientShadowButton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,11 +12,13 @@ const RecordingPage = () => {
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const audioChunks = useRef([]);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsFormSubmitted(true);
-    const response = await fetch("http://localhost:5000/setidamb", {
+    await fetch("http://localhost:5000/setidamb", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -25,17 +27,66 @@ const RecordingPage = () => {
     });
   };
 
-  const toggleRecording = () => {
-    setIsRecording((prev) => !prev);
+  const toggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    } else {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const newMediaRecorder = new MediaRecorder(stream);
+      newMediaRecorder.ondataavailable = handleDataAvailable;
+      newMediaRecorder.start();
+
+      setMediaRecorder(newMediaRecorder);
+      setIsRecording(true);
+    }
+  };
+
+  const handleDataAvailable = (event) => {
+    if (event.data.size > 0) {
+      audioChunks.current.push(event.data);
+    }
+  };
+
+  useEffect(() => {
+    let interval;
+    if (isRecording) {
+      interval = setInterval(sendAudioData, 2000);
+    } else if (!isRecording && interval) {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  const sendAudioData = async () => {
+    if (audioChunks.current.length > 0) {
+      const audioBlob = new Blob(audioChunks.current, { type: "audio/wav" });
+      const formData = new FormData();
+      formData.append("audio", audioBlob, `${code}.wav`);
+
+      await fetch("http://localhost:5000/audio/", {
+        method: "POST",
+        body: formData,
+      });
+
+      audioChunks.current = [];
+    }
   };
 
   const handleSubmitTranscription = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+    }
     setIsRecording(false);
     setShowAlert(true);
   };
 
   return (
-    <div className={`relative min-h-screen bg-gray-100 flex flex-col ${showAlert ? "backdrop-blur-sm" : ""}`}>
+    <div
+      className={`relative min-h-screen bg-gray-100 flex flex-col ${
+        showAlert ? "backdrop-blur-sm" : ""
+      }`}
+    >
       <Navbar userName="User" onLogout={() => console.log("Logout clicked")} />
       <AnimatePresence>
         {!isFormSubmitted ? (
@@ -99,7 +150,9 @@ const RecordingPage = () => {
               </p>
             </div>
             <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8 flex flex-col items-center">
-              <p className="text-lg mb-4">Click the button to start recording:</p>
+              <p className="text-lg mb-4">
+                Click the button to start recording:
+              </p>
               <GradientShadowButton
                 onClick={toggleRecording}
                 className={`${isRecording ? "bg-red-500" : "bg-blue-500"}`}
