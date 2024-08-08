@@ -9,12 +9,20 @@ const Page = () => {
   const [code, setCode] = useState("");
   const [isCodeEntered, setIsCodeEntered] = useState(false);
 
-  const handleCodeSubmit = (e) => {
+  const handleCodeSubmit = async (e) => {
     e.preventDefault();
     setIsCodeEntered(true);
+    const response = await fetch("http://localhost:5000/setidrec", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({code}),
+    });
+
   };
 
-  return (
+  return (  
     <div className="relative min-h-screen bg-gray-100 flex flex-col">
       <Navbar userName={Cookies.get("username")} onLogout={() => console.log("Logout clicked")} />
       <div className={`p-6 flex-1 flex flex-col ${!isCodeEntered && "blur-sm"}`}>

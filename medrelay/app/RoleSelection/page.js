@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -51,7 +51,29 @@ const RoleSelection = () => {
 };
 
 const ActiveIDContainer = () => {
-  const [activeIDs, setActiveIDs] = useState(["12345", "67890"]);
+  const [activeIDs, setActiveIDs] = useState([]);
+
+  useEffect(() => {
+    const fetchActiveIDs = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/allactiveids', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setActiveIDs(data);
+      } catch (error) {
+        console.error("Error fetching active IDs:", error);
+      }
+    };
+
+    fetchActiveIDs();
+  }, []);
 
   const handleAddID = () => {
     const newID = prompt("Enter new ID:");

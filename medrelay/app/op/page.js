@@ -13,9 +13,16 @@ const RecordingPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsFormSubmitted(true);
+    const response = await fetch("http://localhost:5000/setidamb", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({code}),
+    });
   };
 
   const toggleRecording = () => {

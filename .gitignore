@@ -7,6 +7,7 @@ package-lock.json
 package.json
 # C extensions
 *.so
+medrelay/node_modules
 
 # Distribution / packaging
 .Python
