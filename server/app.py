@@ -173,7 +173,7 @@ def transcribe_audio(code):
         currenttranscript = transcriptentry["transcript"]
         db.transcripts.update_one(
             {"id": code},
-            {"$set": {"transcript": currenttranscript + transcription["text"]}}
+            {"$set": {"transcript": transcription["text"]}}
         )
     return transcription['text']
 
