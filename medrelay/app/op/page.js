@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import GradientShadowButton from "../components/GradientShadowButton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,11 +12,12 @@ const RecordingPage = () => {
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const mediaRecorderRef = useRef(null);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsFormSubmitted(true);
-    const response = await fetch("http://localhost:5000/setidamb", {
+    await fetch("http://localhost:5000/setidamb", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -25,17 +26,64 @@ const RecordingPage = () => {
     });
   };
 
-  const toggleRecording = () => {
-    setIsRecording((prev) => !prev);
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+
+      mediaRecorderRef.current.ondataavailable = async (event) => {
+        if (event.data.size > 0) {
+          const audioBlob = event.data;
+          const formData = new FormData();
+          formData.append("audio", audioBlob, `${code}.wav`);
+
+          try {
+            const response = await fetch(`http://localhost:5000/audio/${code}`, {
+              method: "POST",
+              body: formData,
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+              console.log("Success:", result.message);
+            } else {
+              console.error("Error:", result.message);
+            }
+          } catch (error) {
+            console.error("Network error:", error);
+          }
+        }
+      };
+
+      mediaRecorderRef.current.start(8000); // Capture audio every 2 seconds
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Failed to start recording:", error);
+    }
   };
 
-  const handleSubmitTranscription = () => {
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
     setIsRecording(false);
     setShowAlert(true);
   };
 
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
   return (
-    <div className={`relative min-h-screen bg-gray-100 flex flex-col ${showAlert ? "backdrop-blur-sm" : ""}`}>
+    <div
+      className={`relative min-h-screen bg-gray-100 flex flex-col ${
+        showAlert ? "backdrop-blur-sm" : ""
+      }`}
+    >
       <Navbar userName="User" onLogout={() => console.log("Logout clicked")} />
       <AnimatePresence>
         {!isFormSubmitted ? (
@@ -120,10 +168,11 @@ const RecordingPage = () => {
                 </motion.div>
               )}
               <button
-                onClick={handleSubmitTranscription}
+                onClick={stopRecording}
                 className="mt-8 self-end py-2 px-4 bg-red-500 text-white font-semibold rounded-md shadow-md hover:opacity-80 transition-opacity"
+                disabled={!isRecording}
               >
-                Submit Transcription
+                Stop Recording
               </button>
               <audio controls>
                 <source src={`http://localhost:5000/audio/${code}`} type="audio/x-wav" />
