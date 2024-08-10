@@ -33,13 +33,30 @@ db = client.get_database('MedRelay')
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+audio1 = pyaudio.PyAudio()
+
+# Print the device information
+for i in range(audio1.get_device_count()):
+    device_info = audio1.get_device_info_by_index(i)
+    print(f"Device {i}: {device_info['name']}")
+    print(f"  Max Input Channels: {device_info['maxInputChannels']}")
+    print(f"  Default Sample Rate: {device_info['defaultSampleRate']}\n")
+
+# Choose a specific device index that you want to use
+desired_device_index = 1  # Change this to the index of your desired device
+
+# Get the desired device info
+device_info = audio1.get_device_info_by_index(desired_device_index)
+max_channels = device_info['maxInputChannels']
+
+# Initialize CHANNELS with the max number of channels the device supports
+CHANNELS = min(max_channels, 2)  # Or set to 1 if you only need mono input
+
+# Initialize other audio parameters
 FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 22050
+RATE = int(device_info['defaultSampleRate'])
 CHUNK = 1024
 TOTAL_CHUNKS = 500
-
-audio1 = pyaudio.PyAudio()
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -83,6 +100,28 @@ def profile():
     if 'username' not in session:
         return redirect(url_for('login'))
     return jsonify({'username': session['username']}), 200
+
+@app.route('/deactivate', methods=['POST'])
+def deactivate_session():
+    data = request.get_json()
+    code = data.get('code')
+    
+    if not code:
+        return jsonify({"message": "No code provided"}), 400
+
+    # Find the transcript entry by code
+    transcript_entry = db.transcripts.find_one({"id": code})
+
+    if not transcript_entry:
+        return jsonify({"message": "Entry not found"}), 404
+
+    # Set the active field to False
+    db.transcripts.update_one(
+        {"id": code},
+        {"$set": {"active": False}}
+    )
+
+    return jsonify({"message": "Session deactivated successfully."}), 200
 
 @app.route("/ask_gpt", methods=['GET'])
 def ask_gpt():
@@ -195,6 +234,16 @@ def get_all_active_ids():
         active_ids = "None"
     print(active_ids)
     return jsonify(active_ids)
+
+@app.route("/alldeactiveids", methods=["POST"])
+def get_all_deactive_ids():
+    deactive_transcripts = db.transcripts.find({"active": False})
+    if(deactive_transcripts):
+        deactive_ids = [transcript["id"] for transcript in deactive_transcripts]
+    else:
+        deactive_ids = "None"
+    print(deactive_ids)
+    return jsonify(deactive_ids)
 
 
 def save_audio(filename, audio_data):

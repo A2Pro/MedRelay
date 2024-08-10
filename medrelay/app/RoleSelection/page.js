@@ -52,18 +52,19 @@ const RoleSelection = () => {
 
 const ActiveIDContainer = () => {
   const [activeIDs, setActiveIDs] = useState([]);
+  const [inactiveIDs, setInactiveIDs] = useState([]);
 
   useEffect(() => {
     const fetchActiveIDs = async () => {
       try {
-        const response = await fetch('http://localhost:5000/allactiveids', {
-          method: 'POST',
+        const response = await fetch("http://localhost:5000/allactiveids", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok");
         }
         const data = await response.json();
         setActiveIDs(data);
@@ -72,7 +73,26 @@ const ActiveIDContainer = () => {
       }
     };
 
+    const fetchInactiveIDs = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/alldeactiveids", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
+        setInactiveIDs(data);
+      } catch (error) {
+        console.error("Error fetching inactive IDs:", error);
+      }
+    };
+
     fetchActiveIDs();
+    fetchInactiveIDs();
   }, []);
 
   const handleAddID = () => {
@@ -112,6 +132,21 @@ const ActiveIDContainer = () => {
             >
               <FaTimesCircle className="w-6 h-6" />
             </button>
+          </div>
+        ))}
+      </div>
+      <h2 className="mt-8 text-lg font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-700">
+        Inactive IDs
+      </h2>
+      <div className="space-y-4">
+        {inactiveIDs.map((id) => (
+          <div
+            key={id}
+            className="p-4 rounded-lg border border-white bg-gray-50 shadow-inner"
+          >
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-700 text-lg font-bold">
+              {id}
+            </span>
           </div>
         ))}
       </div>
