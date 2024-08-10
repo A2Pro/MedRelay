@@ -18,7 +18,7 @@ const StackedCardTestimonials = () => {
       <div className="p-4">
         <h3 className="text-5xl font-semibold">What our community thinks</h3>
         <p className="text-slate-500 my-4">
-          MedRelay is trusted not only by companies, but most importantly by the community. Here&apos;s what they have to say.
+          MedRelay is trusted not only by companies, but most importantly by the community. Here is what they have to say.
         </p>
         <SelectBtns
           numTracks={testimonials.length}
@@ -147,7 +147,7 @@ export default StackedCardTestimonials;
 const testimonials = [
     {
       description:
-        "MedRelay has revolutionized our emergency response. The real-time data exchange ensures we&apos;re fully prepared for incoming patients before they arrive.",
+        "MedRelay has revolutionized our emergency response. The real-time data exchange ensures we are fully prepared for incoming patients before they arrive.",
       name: "Dr. Emily Richards",
       title: "Chief of Emergency Medicine, City Hospital",
     },
@@ -177,7 +177,7 @@ const testimonials = [
     },
     {
       description:
-        "MedRelay provides a level of preparedness we&apos;ve never had before. It&apos;s reassuring to know that help is always a step ahead.",
+        "MedRelay provides a level of preparedness we have never had before. It is reassuring to know that help is always a step ahead.",
       name: "Tom Martinez",
       title: "EMS Coordinator, Google Health",
     },
