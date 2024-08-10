@@ -35,7 +35,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
-RATE = 44100
+RATE = 22050
 CHUNK = 1024
 TOTAL_CHUNKS = 500
 
@@ -249,6 +249,14 @@ def audio_stream(code):
         # Check if file already exists
         chunk_filename = os.path.join('audio', f'{code}.wav')
         file_exists = os.path.exists(chunk_filename)
+        entry  =  db.transcripts.find_one({"id" : code})
+        now = datetime.now()
+        if not entry:
+              result = db.transcripts.insert_one({
+              "id": code,
+              "transcript": f"Started at {now} from id {code}. ",
+              "active": True
+              })
         while db.transcripts.find_one({"id" : code})["active"] == True:
             data = stream.read(CHUNK)
             audio_data.append(data)
