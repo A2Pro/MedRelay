@@ -15,6 +15,7 @@ const RecordingPage = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const intervalRef = useRef(null);
@@ -142,11 +143,11 @@ const RecordingPage = () => {
 
   const handleImageUpload = async () => {
     if (!selectedImage) return;
-  
+
     const formData = new FormData();
     formData.append("file", selectedImage);
     formData.append("code", code);
-  
+
     try {
       const response = await fetch("http://localhost:5000/upload_image", {
         method: "POST",
@@ -155,13 +156,19 @@ const RecordingPage = () => {
       if (response.ok) {
         const result = await response.json();
         setImageUrl(result.file_id);
-        alert("Image uploaded successfully!");
+        setUploadMessage("Image uploaded successfully!");
       } else {
-        alert("Failed to upload image.");
+        setUploadMessage("Failed to upload image.");
       }
     } catch (error) {
       console.error("Error uploading image:", error);
+      setUploadMessage("Failed to upload image.");
     }
+
+    // Show the message for 3 seconds, then hide it
+    setTimeout(() => {
+      setUploadMessage("");
+    }, 3000);
   };
 
   return (
@@ -246,7 +253,7 @@ const RecordingPage = () => {
                   Recording Stopped.
                 </p>
               )}
-              <audio controls className="mt-4 w-full">
+              <audio controls className="mt-4 w-full" style={{ display: "none" }}>
                 <source src={`http://localhost:5000/audio/${code}`} type="audio/x-wav" />
                 Your browser does not support the audio element.
               </audio>
@@ -288,7 +295,7 @@ const RecordingPage = () => {
                 <input type="file" onChange={handleImageChange} className="mb-4" />
                 <button
                   onClick={handleImageUpload}
-                  className="py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-md hover:opacity-90 transition-opacity"
+                  className="py-2 px-4 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold rounded-md hover:shadow-md hover:scale-105 transform transition-transform"
                 >
                   <FaUpload className="mr-2" />
                   Upload Image
@@ -298,6 +305,19 @@ const RecordingPage = () => {
                     <h4 className="font-semibold">Uploaded Image:</h4>
                     <img src={`http://localhost:5000/get_image/${imageUrl}`} alt="Uploaded" className="mt-2 w-full max-w-xs" />
                   </div>
+                )}
+                {uploadMessage && (
+                  <motion.div
+                    className="mt-4 text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <p className={`text-lg font-semibold ${uploadMessage.includes("successfully") ? "text-green-500" : "text-red-500"}`}>
+                      {uploadMessage}
+                    </p>
+                  </motion.div>
                 )}
               </div>
             </div>
