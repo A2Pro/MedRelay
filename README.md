@@ -79,13 +79,20 @@ MedRelay’s innovative approach to emergency medical communication not only opt
    cd medrelay
    npm install
 
-4. Start Flask Server:
+4. Create .env in the root directory to store OpenAI API Key:
+
+   ```bash
+   OPENAI_API_KEY=REPLACE_WITH_PERSONAL_OPENAI_API_KEY
+
+(Side Note: You can easily connect to your personal MongoDB database by editing the "URL" inside the python file named app.py inside the server directory.)
+
+5. Start Flask Server:
 
    ```bash
    cd server
    flask run
 
-5. Start the Next.js frontend:
+6. Start the Next.js frontend:
 
    ```bash
    cd medrelay
