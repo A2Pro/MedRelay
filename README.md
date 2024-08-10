@@ -1,4 +1,4 @@
-# MedRelay 🚑🏥👨‍⚕️👩‍⚕️
+# MedRelay 🚑🏥👨‍⚕️👩‍⚕️ [Project Start Date: 7/31/2024]
 MedRelay is an innovative platform designed to revolutionize healthcare communication by streamlining the exchange of critical information between ambulances and hospitals. By integrating advanced AI technologies, MedRelay enhances the speed and accuracy of emergency responses, helping healthcare professionals make informed decisions swiftly and effectively.
 
 ## Features
