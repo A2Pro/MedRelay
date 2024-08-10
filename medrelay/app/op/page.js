@@ -84,11 +84,26 @@ const RecordingPage = () => {
     }
   };
 
-  const handleSubmitTranscription = () => {
-    stopRecording();
-    setShowAlert(true);
+  const handleSubmitTranscription = async () => {
+    stopRecording(); // Stop the local recording
+    try {
+      const response = await fetch(`http://localhost:5000/stop_recording/${code}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }), // Pass the session or user ID as needed
+      });
+      if (response.ok) {
+        setShowAlert(true);
+      } else {
+        console.error("Failed to stop recording on the server.");
+      }
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+    }
   };
-
+  
   return (
     <div className={`relative min-h-screen bg-gray-100 flex flex-col ${showAlert ? "backdrop-blur-sm" : ""}`}>
       <Navbar userName="User" onLogout={() => console.log("Logout clicked")} />
@@ -178,7 +193,7 @@ const RecordingPage = () => {
                 onClick={handleSubmitTranscription}
                 className="mt-8 self-end py-2 px-4 bg-red-500 text-white font-semibold rounded-md shadow-md hover:opacity-80 transition-opacity"
               >
-                Submit Transcription
+                Stop Recording
               </button>
               <audio controls>
                 <source src={`http://localhost:5000/audio/${code}`} type="audio/x-wav" />

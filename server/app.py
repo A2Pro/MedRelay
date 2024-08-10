@@ -1,4 +1,4 @@
-from flask import Flask, Response, render_template, jsonify, request, make_response, session, redirect, url_for
+from flask import Flask, Response, render_template, jsonify, request, make_response, session, redirect, url_for, stream_with_context
 import pyaudio
 import wave
 import os
@@ -7,8 +7,10 @@ import openai
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from flask_cors import CORS
+import wave
 from datetime import datetime
-
+from flask_session import Session
+from threading import Lock
 app = Flask(__name__)
 
 app.secret_key = "eut3grbifu32r83gibfejiijohughuijokkijhugvhjiokjbhvghbjkmjhgvfccgvhbygtfdrxcgfhvy3r9eonvj"
@@ -17,6 +19,15 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 # Enable CORS
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+app.config['SESSION_TYPE'] = 'filesystem'
+
+
+Session(app)
+
+# Global dictionary to store recording states per session ID or user ID
+recording_states = {}
+recording_states_lock = Lock()
 
 uri1 = "mongodb+srv://michael:lxsquid@cluster0.ruhmegq.mongodb."
 uri2 = "net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -48,6 +59,7 @@ def register():
 
 @app.route("/login", methods=["POST"])
 def login():
+    session["recording"] = False
     data = request.json
     username = data.get("username")
     password = data.get("password")
@@ -152,7 +164,7 @@ def set_idamb():
             "active": True
         })
         print(f"Insert result: Inserted ID {result.inserted_id}")
-
+    session["recording"] = True
     return jsonify({"message": "success"}), 202
 
 def transcribe_audio(code):
@@ -173,7 +185,7 @@ def transcribe_audio(code):
         currenttranscript = transcriptentry["transcript"]
         db.transcripts.update_one(
             {"id": code},
-            {"$set": {"transcript": transcription["text"]}}
+            {"$set": {"transcript": currenttranscript + transcription["text"]}}
         )
     return transcription['text']
 
@@ -212,26 +224,72 @@ def get_transcripts():
     })
 
 
+@app.route("/stop_recording/<code>", methods = ["POST", "GET"])
+def stoprecording(code):
+    entry  = db.transcripts.find_one({"id" : code})
+    if not entry:
+        return jsonify({"message" : "Entry not found"}), 400
+    db.transcripts.update_one(
+            {"id": code},
+            {
+                "$set": {
+                    "active": False
+                }
+            }
+    )
+    return jsonify({"message" : "success"}), 200
+
+
+
 @app.route('/audio/<code>')
 def audio_stream(code):
     os.makedirs('audio', exist_ok=True)
-    def sound():
+    def sound(code):
         wav_header = generate_wav_header(RATE, 16, CHANNELS)
         stream = audio1.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, input_device_index=1, frames_per_buffer=CHUNK)
         audio_data = []
         chunk_counter = 0
-        while True:
+        # Check if file already exists
+        chunk_filename = os.path.join('audio', f'{code}.wav')
+        file_exists = os.path.exists(chunk_filename)
+        while db.transcripts.find_one({"id" : code})["active"] == True:
             data = stream.read(CHUNK)
             audio_data.append(data)
             chunk_counter += 1
+
             if chunk_counter % TOTAL_CHUNKS == 0:
-                chunk_filename = os.path.join('audio', f'{code}.wav')
-                save_audio(chunk_filename, audio_data)
+                if file_exists:
+                    # Append new audio data
+                    append_audio(chunk_filename, audio_data)
+                else:
+                    # Create a new file and save the data
+                    save_audio(chunk_filename, audio_data)
+                    file_exists = True  # File now exists
                 transcribe_audio(code)
                 audio_data = []
                 yield chunk_filename
+    return Response(sound(code))
 
-    return Response(sound())
+
+
+
+def append_audio(filename, new_audio_data):
+    # Read existing audio data
+    with wave.open(filename, 'rb') as wf:
+        existing_data = wf.readframes(wf.getnframes())
+        params = wf.getparams()  # Get the parameters of the existing file
+
+    # Append new data to existing data
+    combined_data = existing_data + b''.join(new_audio_data)
+
+    # Write the combined data back to the file
+    with wave.open(filename, 'wb') as wf:
+        wf.setnchannels(params.nchannels)
+        wf.setsampwidth(params.sampwidth)
+        wf.setframerate(params.framerate)
+        wf.writeframes(combined_data)
+
+
 
 @app.route('/hello')
 def hello():
