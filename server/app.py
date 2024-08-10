@@ -9,7 +9,6 @@ from pymongo.server_api import ServerApi
 from flask_cors import CORS
 import wave
 from datetime import datetime
-from flask_session import Session
 from threading import Lock
 app = Flask(__name__)
 
@@ -22,8 +21,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config['SESSION_TYPE'] = 'filesystem'
 
-
-Session(app)
 
 # Global dictionary to store recording states per session ID or user ID
 recording_states = {}
