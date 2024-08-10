@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import Link from "next/link";
 import GradientShadowButton from "../components/GradientShadowButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaCheckCircle, FaMicrophone, FaStop } from "react-icons/fa";
+import { FaCheckCircle, FaMicrophone, FaStop, FaUpload } from "react-icons/fa";
 import Cookies from "js-cookie";
 
 const RecordingPage = () => {
@@ -13,6 +13,8 @@ const RecordingPage = () => {
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const intervalRef = useRef(null);
@@ -63,7 +65,6 @@ const RecordingPage = () => {
   };
 
   async function deactivateHandle() {
-    deactivateHandle();
     setShowAlert(false);
     setIsFormSubmitted(false);
     setCode("");
@@ -86,7 +87,7 @@ const RecordingPage = () => {
   }
 
   function continueHandle() {
-    setShowAlert(false)
+    setShowAlert(false);
     window.location.href = "/RoleSelection";
   }
 
@@ -129,6 +130,37 @@ const RecordingPage = () => {
       }
     } catch (error) {
       console.error("Error stopping recording:", error);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+    }
+  };
+
+  const handleImageUpload = async () => {
+    if (!selectedImage) return;
+  
+    const formData = new FormData();
+    formData.append("file", selectedImage);
+    formData.append("code", code);
+  
+    try {
+      const response = await fetch("http://localhost:5000/upload_image", {
+        method: "POST",
+        body: formData,
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setImageUrl(result.file_id);
+        alert("Image uploaded successfully!");
+      } else {
+        alert("Failed to upload image.");
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
     }
   };
 
@@ -251,6 +283,23 @@ const RecordingPage = () => {
                   </button>
                 </Link>
               </div>
+              <div className="mt-8 w-full">
+                <h3 className="text-lg font-semibold mb-4">Upload Image</h3>
+                <input type="file" onChange={handleImageChange} className="mb-4" />
+                <button
+                  onClick={handleImageUpload}
+                  className="py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-md hover:opacity-90 transition-opacity"
+                >
+                  <FaUpload className="mr-2" />
+                  Upload Image
+                </button>
+                {imageUrl && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold">Uploaded Image:</h4>
+                    <img src={`http://localhost:5000/get_image/${imageUrl}`} alt="Uploaded" className="mt-2 w-full max-w-xs" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -269,14 +318,13 @@ const RecordingPage = () => {
             </h2>
             <div className="flex justify-center space-x-4">
               <button
-                onClick={() => {
-                }}
+                onClick={deactivateHandle}
                 className="py-2 px-4 bg-red-500 text-white font-semibold rounded-md hover:opacity-90 transition-opacity"
               >
                 Deactivate ID
               </button>
               <button
-                onClick={continueHandle()}
+                onClick={continueHandle}
                 className="py-2 px-4 bg-gray-300 text-black font-semibold rounded-md hover:opacity-90 transition-opacity"
               >
                 Continue

@@ -82,6 +82,29 @@ const Page = () => {
     return formattedReport;
   };
 
+  const downloadImages = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/download_images/${code}`, {
+        method: "GET",
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${code}_images.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error("Failed to download images");
+      }
+    } catch (error) {
+      console.error("Error downloading images:", error);
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-gray-100 flex flex-col">
       <Navbar
@@ -121,6 +144,12 @@ const Page = () => {
             </div>
           </div>
         </div>
+        <button
+          onClick={downloadImages}
+          className="mt-4 py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-md hover:opacity-90 transition-opacity"
+        >
+          Download Images
+        </button>
       </div>
 
       <AnimatePresence>

@@ -11,6 +11,8 @@ import wave
 from datetime import datetime
 from threading import Lock
 from io import BytesIO
+import gridfs
+import zipfile
 
 app = Flask(__name__)
 
@@ -30,6 +32,7 @@ uri1 = "mongodb+srv://michael:lxsquid@cluster0.ruhmegq.mongodb."
 uri2 = "net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient((uri1 + uri2), server_api=ServerApi('1'))
 db = client.get_database('MedRelay')
+fs = gridfs.GridFS(db)
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -52,6 +55,71 @@ FORMAT = pyaudio.paInt16
 RATE = int(device_info['defaultSampleRate'])
 CHUNK = 1024
 TOTAL_CHUNKS = 500
+
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    if 'file' not in request.files or 'code' not in request.form:
+        return jsonify({'message': 'No file part or code provided'}), 400
+    
+    file = request.files['file']
+    code = request.form['code']
+    
+    if file.filename == '':
+        return jsonify({'message': 'No selected file'}), 400
+
+    # Determine the file extension
+    file_extension = file.filename.split('.')[-1].lower()
+    mime_type = f'image/{file_extension}'
+
+    # Find the number of images associated with this code to determine the next number
+    count = db.fs.files.count_documents({'filename': {'$regex': f'^{code}_'}})
+    file_number = count + 1
+
+    # Set the filename to be code_number.extension
+    filename = f"{code}_{file_number}.{file_extension}"
+    
+    # Store the file in GridFS
+    file_id = fs.put(file, filename=filename, content_type=mime_type)
+    return jsonify({'file_id': str(file_id), 'filename': filename, 'message': 'Image uploaded successfully'}), 201
+
+@app.route('/get_image/<file_id>', methods=['GET'])
+def get_image(file_id):
+    try:
+        file = fs.get(file_id)
+        mime_type = file.content_type if file.content_type else 'application/octet-stream'
+        return send_file(BytesIO(file.read()), attachment_filename=file.filename, mimetype=mime_type)
+    except gridfs.NoFile:
+        return jsonify({'message': 'File not found'}), 404
+    
+@app.route('/download_images/<code>', methods=['GET'])
+def download_images_by_code(code):
+    try:
+        # Find all files with filenames starting with the given code
+        files = list(db.fs.files.find({'filename': {'$regex': f'^{code}_'}}))
+        if not files:
+            return jsonify({'message': 'No images found for this code'}), 404
+
+        # Create a zip file in memory
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file in files:
+                # Retrieve the file data from GridFS
+                file_data = fs.get(file['_id']).read()
+                # Add file to the zip file
+                zip_file.writestr(file['filename'], file_data)
+
+        zip_buffer.seek(0)
+        return send_file(
+            zip_buffer,
+            as_attachment=True,
+            download_name=f"{code}_images.zip",
+            mimetype='application/zip'
+        )
+    except gridfs.NoFile:
+        return jsonify({'message': 'File not found in GridFS'}), 404
+    except Exception as e:
+        app.logger.error(f'An error occurred: {str(e)}')
+        return jsonify({'message': f'An error occurred: {str(e)}'}), 500
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -91,8 +159,6 @@ def get_raw_transcription(code):
     if not entry:
         return jsonify({"message": "No active transcription found for this code."}), 404
     return jsonify({"transcription": entry["transcript"]}), 200
-
-
 
 @app.route('/logout', methods=['POST'])
 def logout():
