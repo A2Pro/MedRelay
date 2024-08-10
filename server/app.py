@@ -117,7 +117,7 @@ def set_idrec():
     print(f"Received code: {code}")
     if not code:
         return jsonify({"message": "No code provided"}), 400
-    session
+    return jsonify({"message" : "sucess"}), 200
 
 @app.route('/setidamb', methods=['POST'])
 def set_idamb():
@@ -179,7 +179,6 @@ def transcribe_audio(code):
 
 @app.route("/allactiveids", methods=["POST"])
 def get_all_active_ids():
-    # Query the database for all entries with "active": True
     active_transcripts = db.transcripts.find({"active": True})
     if(active_transcripts):
         active_ids = [transcript["id"] for transcript in active_transcripts]
@@ -213,37 +212,38 @@ def get_transcripts():
     })
 
 
-@app.route('/audio/<code>', methods=['POST'])
+@app.route('/audio/<code>')
 def audio_stream(code):
     os.makedirs('audio', exist_ok=True)
-    audio_file_path = os.path.join('audio', f'{code}.wav')
+    def sound():
+        wav_header = generate_wav_header(RATE, 16, CHANNELS)
+        stream = audio1.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, input_device_index=1, frames_per_buffer=CHUNK)
+        audio_data = []
+        chunk_counter = 0
+        while True:
+            data = stream.read(CHUNK)
+            audio_data.append(data)
+            chunk_counter += 1
+            if chunk_counter % TOTAL_CHUNKS == 0:
+                chunk_filename = os.path.join('audio', f'{code}.wav')
+                save_audio(chunk_filename, audio_data)
+                transcribe_audio(code)
+                audio_data = []
+                yield chunk_filename
 
-    # Read the audio blob from the request
-    if 'audio' not in request.files:
-        return jsonify({"error": "No audio data received"}), 400
-
-    audio_file = request.files['audio']
-
-    # Save the audio file
-    with wave.open(audio_file_path, 'wb') as wf:
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(audio1.get_sample_size(FORMAT))
-        wf.setframerate(RATE)
-        wf.writeframes(audio_file.read())
-
-    # Perform transcription or other processing on the audio file
-    transcription_text = transcribe_audio(code)
-
-    return jsonify({"message": "Audio processed successfully", "transcription": transcription_text}), 200
+    return Response(sound())
 
 @app.route('/hello')
 def hello():
     return "Hello, World!"
 
-@app.route('/transcript')
-def get_transcript():
-    global transcript
-    return jsonify({'transcript': transcript})
+@app.route('/transcript/<code>')
+def get_transcript(code):
+    entry = db.transcripts.find_one({"id": code})
+    if not entry:
+        return("No transcript found.")
+    else:
+        return entry["transcript"]
 
 @app.route("/trans")
 def trans():

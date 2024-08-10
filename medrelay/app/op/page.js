@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import GradientShadowButton from "../components/GradientShadowButton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,11 +13,13 @@ const RecordingPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const intervalRef = useRef(null);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsFormSubmitted(true);
-    await fetch("http://localhost:5000/setidamb", {
+    const response = await fetch("http://localhost:5000/setidamb", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -30,44 +32,48 @@ const RecordingPage = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
-
-      mediaRecorderRef.current.ondataavailable = async (event) => {
-        if (event.data.size > 0) {
-          const audioBlob = event.data;
-          const formData = new FormData();
-          formData.append("audio", audioBlob, `${code}.wav`);
-
-          try {
-            const response = await fetch(`http://localhost:5000/audio/${code}`, {
-              method: "POST",
-              body: formData,
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-              console.log("Success:", result.message);
-            } else {
-              console.error("Error:", result.message);
-            }
-          } catch (error) {
-            console.error("Network error:", error);
-          }
-        }
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
       };
+      mediaRecorderRef.current.start();
 
-      mediaRecorderRef.current.start(8000); // Capture audio every 2 seconds
+      intervalRef.current = setInterval(() => {
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/wav",
+          });
+          audioChunksRef.current = [];
+          sendAudioToBackend(audioBlob);
+        }
+      }, 3000); // Send every 3 seconds
+
       setIsRecording(true);
     } catch (error) {
-      console.error("Failed to start recording:", error);
+      console.error("Error accessing microphone:", error);
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
+      clearInterval(intervalRef.current);
+      setIsRecording(false);
     }
-    setIsRecording(false);
-    setShowAlert(true);
+  };
+
+  const sendAudioToBackend = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob);
+    formData.append("code", code);
+    try {
+      const response = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        body: formData,
+      });
+      // Handle response if needed
+    } catch (error) {
+      console.error("Error sending audio to backend:", error);
+    }
   };
 
   const toggleRecording = () => {
@@ -78,12 +84,13 @@ const RecordingPage = () => {
     }
   };
 
+  const handleSubmitTranscription = () => {
+    stopRecording();
+    setShowAlert(true);
+  };
+
   return (
-    <div
-      className={`relative min-h-screen bg-gray-100 flex flex-col ${
-        showAlert ? "backdrop-blur-sm" : ""
-      }`}
-    >
+    <div className={`relative min-h-screen bg-gray-100 flex flex-col ${showAlert ? "backdrop-blur-sm" : ""}`}>
       <Navbar userName="User" onLogout={() => console.log("Logout clicked")} />
       <AnimatePresence>
         {!isFormSubmitted ? (
@@ -168,11 +175,10 @@ const RecordingPage = () => {
                 </motion.div>
               )}
               <button
-                onClick={stopRecording}
+                onClick={handleSubmitTranscription}
                 className="mt-8 self-end py-2 px-4 bg-red-500 text-white font-semibold rounded-md shadow-md hover:opacity-80 transition-opacity"
-                disabled={!isRecording}
               >
-                Stop Recording
+                Submit Transcription
               </button>
               <audio controls>
                 <source src={`http://localhost:5000/audio/${code}`} type="audio/x-wav" />
@@ -226,24 +232,19 @@ const Navbar = ({ userName, onLogout }) => {
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link href="/">
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-              MedRelay™
+          <Link href="/" passHref>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+              MyApp
             </span>
           </Link>
           <div className="flex items-center space-x-4">
-            <Link
-              href="/RoleSelection"
-              className="py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-md hover:opacity-90 transition-opacity"
+            <span className="text-gray-600 font-semibold">{userName}</span>
+            <button
+              onClick={onLogout}
+              className="py-2 px-4 bg-red-500 text-white font-semibold rounded-md hover:opacity-90 transition-opacity"
             >
-              Back to Role Selection
-            </Link>
-            <span className="text-gray-700 font-medium">
-              Welcome, {userName}!
-            </span>
-            <GradientShadowButton onClick={onLogout}>
               Logout
-            </GradientShadowButton>
+            </button>
           </div>
         </div>
       </div>
