@@ -14,6 +14,22 @@ MedRelay is an innovative platform designed to revolutionize healthcare communic
 
 Watch our demo video to see MedRelay in action:
 
+## Challenges Faced
+
+Developing MedRelay presented several challenges that pushed our team to innovate and adapt:
+
+- **Real-Time Data Processing**: Implementing a system capable of capturing and transcribing patient data every 2 seconds was a significant technical challenge. Ensuring low latency and high accuracy required optimization of both our data handling processes and the AI model integration.
+
+- **AI Integration**: Integrating GPT-4 for real-time analysis of medical data posed difficulties, particularly in balancing speed and accuracy. Our initial attempts using specialized medical language models, such as Medical-Llama, were too slow for our needs, prompting us to fine-tune GPT-4 to meet the demands of real-time processing.
+
+- **Data Security and Privacy**: Handling sensitive medical information necessitated rigorous data security measures. Ensuring compliance with healthcare regulations and maintaining robust encryption and access controls were essential in building trust with healthcare providers.
+
+- **User Interface Design**: Creating a customizable and intuitive user interface that meets the diverse needs of healthcare providers was another challenge. We focused on user feedback to refine the Next.js frontend, making it both adaptable and user-friendly.
+
+- **System Reliability**: Ensuring consistent connectivity and data integrity between ambulances and hospitals required extensive testing and refinement. We developed mechanisms to manage data flow effectively, even in environments with varying network conditions.
+
+Despite these challenges, our team's dedication and collaboration enabled us to create a robust and effective solution that improves healthcare communication.
+
 ## System Requirements
 
 - **Backend**: Flask app using MongoDB for data storage and retrieval.
