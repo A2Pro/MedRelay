@@ -1,4 +1,4 @@
-from flask import Flask, Response, render_template, jsonify, request, make_response, session, redirect, url_for, stream_with_context
+from flask import Flask, Response, render_template, jsonify, request, make_response, session, redirect, url_for, stream_with_context, send_file
 import pyaudio
 import wave
 import os
@@ -10,19 +10,19 @@ from flask_cors import CORS
 import wave
 from datetime import datetime
 from threading import Lock
+from io import BytesIO
+
 app = Flask(__name__)
 
 app.secret_key = "eut3grbifu32r83gibfejiijohughuijokkijhugvhjiokjbhvghbjkmjhgvfccgvhbygtfdrxcgfhvy3r9eonvj"
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-# Enable CORS
+
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config['SESSION_TYPE'] = 'filesystem'
 
-
-# Global dictionary to store recording states per session ID or user ID
 recording_states = {}
 recording_states_lock = Lock()
 
@@ -35,24 +35,19 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 audio1 = pyaudio.PyAudio()
 
-# Print the device information
 for i in range(audio1.get_device_count()):
     device_info = audio1.get_device_info_by_index(i)
     print(f"Device {i}: {device_info['name']}")
     print(f"  Max Input Channels: {device_info['maxInputChannels']}")
     print(f"  Default Sample Rate: {device_info['defaultSampleRate']}\n")
 
-# Choose a specific device index that you want to use
-desired_device_index = 1  # Change this to the index of your desired device
+desired_device_index = 1
 
-# Get the desired device info
 device_info = audio1.get_device_info_by_index(desired_device_index)
 max_channels = device_info['maxInputChannels']
 
-# Initialize CHANNELS with the max number of channels the device supports
-CHANNELS = min(max_channels, 2)  # Or set to 1 if you only need mono input
+CHANNELS = min(max_channels, 2)
 
-# Initialize other audio parameters
 FORMAT = pyaudio.paInt16
 RATE = int(device_info['defaultSampleRate'])
 CHUNK = 1024
@@ -89,6 +84,15 @@ def login():
         return response
     else:
         return jsonify({"status": "error", "message": "Incorrect password"}), 401
+    
+@app.route('/raw_transcription/<code>', methods=['GET'])
+def get_raw_transcription(code):
+    entry = db.transcripts.find_one({"id": code, "active": True})
+    if not entry:
+        return jsonify({"message": "No active transcription found for this code."}), 404
+    return jsonify({"transcription": entry["transcript"]}), 200
+
+
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -109,13 +113,11 @@ def deactivate_session():
     if not code:
         return jsonify({"message": "No code provided"}), 400
 
-    # Find the transcript entry by code
     transcript_entry = db.transcripts.find_one({"id": code})
 
     if not transcript_entry:
         return jsonify({"message": "Entry not found"}), 404
 
-    # Set the active field to False
     db.transcripts.update_one(
         {"id": code},
         {"$set": {"active": False}}
@@ -123,21 +125,29 @@ def deactivate_session():
 
     return jsonify({"message": "Session deactivated successfully."}), 200
 
-@app.route("/ask_gpt", methods=['GET'])
+@app.route("/ask_gpt", methods=['POST'])
 def ask_gpt():
-    global transcript
-    prompt = transcript
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "user",
-                "content": f"Sort the following text into three categories: Status, Injury, and Treatment. Assume the text is about a patient and they are describing them. The text is in chronological order, so if something later on contradicts something that was said earlier, assume that the thing said latest is correct. Also, if there is no clear injury/status/treatment, put N/A in that row. IF THERE IS NO TEXT, PUT NA FOR ALL 3. PUT IN THIS FORMAT: Status: (status) Injury: (injury) Treatment: (treatment). Here's the text: {prompt}"
-            }
-        ]
-    )
-    result = response.choices[0].message['content']
-    return jsonify({"response": result})
+    data = request.get_json()
+    prompt = data.get("prompt", "")
+
+    if not prompt:
+        return jsonify({"response": "No text provided for analysis. Please provide valid text."}), 400
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Sort the following text into three categories: Status, Injury, and Treatment. Assume the text is about a patient and they are describing them. The text is in chronological order, so if something later on contradicts something that was said earlier, assume that the thing said latest is correct. Also, if there is no clear injury/status/treatment, put N/A in that row. IF THERE IS NO TEXT, PUT NA FOR ALL 3. PUT IN THIS FORMAT: Status: (status) Injury: (injury) Treatment: (treatment). Here's the text: {prompt}"
+                }
+            ]
+        )
+        result = response.choices[0].message['content']
+        return jsonify({"response": result})
+    except Exception as e:
+        return jsonify({"response": f"An error occurred while processing the request: {str(e)}"}), 500
+
 
 def generate_wav_header(sample_rate, bits_per_sample, channels):
     datasize = 2000 * 10**6
@@ -178,7 +188,7 @@ def set_idamb():
 
     session['id'] = code
     now = datetime.now()
-    # Check the current entry based on session id
+
     transcriptentry = db.transcripts.find_one({"id": code})
     print(f"Current transcript entry: {transcriptentry}")
 
@@ -245,6 +255,43 @@ def get_all_deactive_ids():
     print(deactive_ids)
     return jsonify(deactive_ids)
 
+@app.route('/getAllActiveTranscriptions', methods=['GET'])
+def get_all_active_transcriptions():
+    active_transcriptions = db.transcripts.find({"active": True})
+    if not active_transcriptions:
+        return jsonify({"message": "No active transcriptions found"}), 404
+
+    output = BytesIO()
+    for transcription in active_transcriptions:
+        output.write(f"ID: {transcription['id']}\nTranscript: {transcription['transcript']}\n\n".encode())
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="active_transcriptions.txt",
+        mimetype="text/plain"
+    )
+
+@app.route('/getAllDeActiveTranscriptions', methods=['GET'])
+def get_all_deactive_transcriptions():
+    deactive_transcriptions = db.transcripts.find({"active": False})
+    if not deactive_transcriptions:
+        return jsonify({"message": "No deactive transcriptions found"}), 404
+
+    output = BytesIO()
+    for transcription in deactive_transcriptions:
+        output.write(f"ID: {transcription['id']}\nTranscript: {transcription['transcript']}\n\n".encode())
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="deactive_transcriptions.txt",
+        mimetype="text/plain"
+    )
 
 def save_audio(filename, audio_data):
     with wave.open(filename, 'wb') as wf:
@@ -269,7 +316,6 @@ def get_transcripts():
         'transcripts': transcript_texts
     })
 
-
 @app.route("/stop_recording/<code>", methods = ["POST", "GET"])
 def stoprecording(code):
     entry  = db.transcripts.find_one({"id" : code})
@@ -284,8 +330,6 @@ def stoprecording(code):
             }
     )
     return jsonify({"message" : "success"}), 200
-
-
 
 @app.route('/audio/<code>')
 def audio_stream(code):
@@ -313,37 +357,27 @@ def audio_stream(code):
 
             if chunk_counter % TOTAL_CHUNKS == 0:
                 if file_exists:
-                    # Append new audio data
                     append_audio(chunk_filename, audio_data)
                 else:
-                    # Create a new file and save the data
                     save_audio(chunk_filename, audio_data)
-                    file_exists = True  # File now exists
+                    file_exists = True
                 transcribe_audio(code)
                 audio_data = []
                 yield chunk_filename
     return Response(sound(code))
 
-
-
-
 def append_audio(filename, new_audio_data):
-    # Read existing audio data
     with wave.open(filename, 'rb') as wf:
         existing_data = wf.readframes(wf.getnframes())
-        params = wf.getparams()  # Get the parameters of the existing file
+        params = wf.getparams() 
 
-    # Append new data to existing data
     combined_data = existing_data + b''.join(new_audio_data)
 
-    # Write the combined data back to the file
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(params.nchannels)
         wf.setsampwidth(params.sampwidth)
         wf.setframerate(params.framerate)
         wf.writeframes(combined_data)
-
-
 
 @app.route('/hello')
 def hello():

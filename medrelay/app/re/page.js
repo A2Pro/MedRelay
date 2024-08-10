@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import GradientShadowButton from "../components/GradientShadowButton";
@@ -8,23 +8,86 @@ import Cookies from "js-cookie";
 const Page = () => {
   const [code, setCode] = useState("");
   const [isCodeEntered, setIsCodeEntered] = useState(false);
+  const [transcription, setTranscription] = useState("");
+  const [report, setReport] = useState("");
+
+  useEffect(() => {
+    let interval;
+    if (isCodeEntered) {
+      interval = setInterval(() => {
+        getRawTranscriptionAndReport();
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isCodeEntered]);
 
   const handleCodeSubmit = async (e) => {
     e.preventDefault();
     setIsCodeEntered(true);
-    const response = await fetch("http://localhost:5000/setidrec", {
+    await fetch("http://localhost:5000/setidrec", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({code}),
+      body: JSON.stringify({ code }),
     });
-
   };
 
-  return (  
+  const getRawTranscriptionAndReport = async () => {
+    try {
+      const transcriptionResponse = await fetch(
+        `http://localhost:5000/raw_transcription/${code}`
+      );
+      if (transcriptionResponse.ok) {
+        const transcriptionData = await transcriptionResponse.json();
+        setTranscription(transcriptionData.transcription);
+
+        const reportResponse = await fetch(`http://localhost:5000/ask_gpt`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt: transcriptionData.transcription }),
+        });
+
+        if (reportResponse.ok) {
+          const reportData = await reportResponse.json();
+          setReport(formatReport(reportData.response));
+        } else {
+          console.error("Failed to get report");
+        }
+      } else {
+        console.error("Failed to get raw transcription");
+      }
+    } catch (error) {
+      console.error("Error fetching raw transcription or report:", error);
+    }
+  };
+
+  const formatReport = (report) => {
+    const formattedReport = report
+      .split(/Status:|Injury:|Treatment:|Extra-Information:/)
+      .map((line, index) => {
+        if (line.trim()) {
+          const label = ["Status", "Injury", "Treatment", "Extra-Information"][index - 1];
+          return (
+            <div key={index}>
+              <strong>{label}:</strong> {line.trim()}
+            </div>
+          );
+        }
+        return null;
+      })
+      .filter((line) => line !== null);
+    return formattedReport;
+  };
+
+  return (
     <div className="relative min-h-screen bg-gray-100 flex flex-col">
-      <Navbar userName={Cookies.get("username")} onLogout={() => console.log("Logout clicked")} />
+      <Navbar
+        userName={Cookies.get("username")}
+        onLogout={() => console.log("Logout clicked")}
+      />
       <div className={`p-6 flex-1 flex flex-col ${!isCodeEntered && "blur-sm"}`}>
         <h1 className="text-3xl font-bold text-center mb-8">
           ID #
@@ -40,7 +103,7 @@ const Page = () => {
               </h2>
               <div className="flex-1 w-full bg-gray-200 rounded-md p-4">
                 <p className="text-lg text-gray-600">
-                  Placeholder text for transcription...
+                  {transcription || "Fetching transcription..."}
                 </p>
               </div>
             </div>
@@ -49,9 +112,11 @@ const Page = () => {
             <div className="w-full">
               <h2 className="text-2xl font-bold mb-4 text-center">Report</h2>
               <div className="flex-1 w-full bg-gray-200 rounded-md p-4">
-                <p className="text-lg text-gray-600">
-                  Placeholder text for report...
-                </p>
+                {report.length ? (
+                  report
+                ) : (
+                  <p className="text-lg text-gray-600">Fetching report...</p>
+                )}
               </div>
             </div>
           </div>

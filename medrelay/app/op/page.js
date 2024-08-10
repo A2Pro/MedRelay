@@ -46,7 +46,7 @@ const RecordingPage = () => {
           audioChunksRef.current = [];
           sendAudioToBackend(audioBlob);
         }
-      }, 3000); // Send every 3 seconds
+      }, 3000);
 
       setIsRecording(true);
     } catch (error) {
@@ -99,7 +99,6 @@ const RecordingPage = () => {
         method: "POST",
         body: formData,
       });
-      // Handle response if needed
     } catch (error) {
       console.error("Error sending audio to backend:", error);
     }
@@ -114,14 +113,14 @@ const RecordingPage = () => {
   };
 
   const handleSubmitTranscription = async () => {
-    stopRecording(); // Stop the local recording
+    stopRecording();
     try {
       const response = await fetch(`http://localhost:5000/stop_recording/${code}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code }), // Pass the session or user ID as needed
+        body: JSON.stringify({ code }),
       });
       if (response.ok) {
         setShowAlert(true);
