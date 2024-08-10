@@ -22,7 +22,7 @@ Developing MedRelay presented several challenges that pushed our team to innovat
 
 - **AI Integration**: Integrating GPT-4 for real-time analysis of medical data posed difficulties, particularly in balancing speed and accuracy. Our initial attempts using specialized medical language models, such as Medical-Llama, were too slow for our needs, prompting us to fine-tune GPT-4 to meet the demands of real-time processing.
 
-- **Data Security and Privacy**: Handling sensitive medical information necessitated rigorous data security measures. Ensuring compliance with healthcare regulations and maintaining robust encryption and access controls were essential in building trust with healthcare providers.
+- **Data Security and Privacy**: Handling sensitive medical information necessitated rigorous data security measures. Ensuring compliance with healthcare regulations and maintaining robust encryption and access controls are going to be essential in building trust with healthcare providers.
 
 - **User Interface Design**: Creating a customizable and intuitive user interface that meets the diverse needs of healthcare providers was another challenge. We focused on user feedback to refine the Next.js frontend, making it both adaptable and user-friendly.
 
