@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import GradientShadowButton from "../components/GradientShadowButton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,9 +16,19 @@ const RecordingPage = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleString());
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const intervalRef = useRef(null);
+
+  useEffect(() => {
+    // Update the time every second
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleString());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -234,6 +244,9 @@ const RecordingPage = () => {
               <p className="text-lg font-semibold">
                 Operator #2: <span>{operator2}</span>
               </p>
+              <p className="text-lg font-semibold">
+                Date & Time: <span>{currentTime}</span>
+              </p>
             </div>
             <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8 flex flex-col items-center">
               {isRecording ? (
@@ -250,7 +263,7 @@ const RecordingPage = () => {
                 </motion.div>
               ) : (
                 <p className="ml-4 text-lg text-green-500">
-                  Recording Stopped.
+                  Recording is NOT active. Recording is Ready
                 </p>
               )}
               <audio controls className="mt-4 w-full" style={{ display: "none" }}>
