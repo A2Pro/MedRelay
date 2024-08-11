@@ -17,6 +17,7 @@ Our goal was to develop a platform that not only bridges communication gaps but 
 - **Customizable UI**: Built with a Next.js frontend, allowing hospitals to tailor the dashboard to fit their workflow seamlessly.
 - **Secure and Fast**: Uses MongoDB for backend security and speed, ensuring data is both protected and quickly retrievable.
 - **Historical Data Access**: Provides hospitals with the ability to download previous transcripts and manage active/inactive IDs efficiently.
+- **By-Organization Database**: Each organization establishes its own dedicated database to connect with MedRelay, ensuring privacy and secure access to data. This design is highly effective as it eliminates the risk of retrieving incorrect or unauthorized sensitive information while providing tailored solutions to meet each organization's specific needs.
 
 ### Demo
 
