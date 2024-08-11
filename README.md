@@ -1,6 +1,14 @@
 # MedRelay 🚑🏥👨‍⚕️👩‍⚕️ [Project Start Date: 7/31/2024]
 MedRelay is an innovative platform designed to revolutionize healthcare communication by streamlining the exchange of critical information between ambulances and hospitals. By integrating advanced AI technologies, MedRelay enhances the speed and accuracy of emergency responses, helping healthcare professionals make informed decisions swiftly and effectively.
 
+## Inspiration
+
+The inspiration for MedRelay stemmed from the urgent need to enhance communication in emergency medical situations. During critical moments, every second counts, and we recognized the limitations of traditional two-way radios in providing timely and accurate information between ambulances and hospitals.
+
+Witnessing the impact of delayed or miscommunicated information on patient outcomes motivated us to create a solution that leverages modern technology to streamline and improve this vital exchange. By integrating real-time data transcription and AI analysis, we aimed to provide healthcare professionals with the tools they need to anticipate and address patient needs more effectively.
+
+Our goal was to develop a platform that not only bridges communication gaps but also empowers medical teams to deliver faster, more informed care, ultimately saving lives. MedRelay embodies our commitment to pushing the boundaries of what's possible in healthcare communication and making a tangible difference in the communities we serve.
+
 ## Features
 
 - **Live Transcription**: Captures and transcribes patient data every 2 seconds, streaming it directly to the hospital for real-time monitoring.
