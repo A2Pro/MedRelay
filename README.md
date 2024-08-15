@@ -1,13 +1,13 @@
 # MedRelay 🚑🏥👨‍⚕️👩‍⚕️ [Project Start Date: 7/31/2024]
-MedRelay is an innovative platform designed to revolutionize healthcare communication by streamlining the exchange of critical information between ambulances and hospitals. By integrating advanced AI technologies, MedRelay enhances the speed and accuracy of emergency responses, helping healthcare professionals make informed decisions swiftly and effectively.
+MedRelay is a platform designed to revolutionize healthcare communication by streamlining the exchange of critical information between ambulances and hospitals. By integrating advanced AI technologies into our app, we enhance the speed and accuracy of emergency responses, therefore helping healthcare professionals make informed decisions swiftly and effectively, saving lives.
 
 ## Inspiration
 
-The inspiration for MedRelay stemmed from the urgent need to enhance communication in emergency medical situations. During critical moments, every second counts, and we recognized the limitations of traditional two-way radios in providing timely and accurate information between ambulances and hospitals.
+The inspiration for MedRelay was brought forth from the urgent need to enhance communication in emergency medical situations. During critical moments, every second counts, and we saw the limitations of traditional two-way radios in providing timely and accurate information between ambulances and hospitals.
 
-Witnessing the impact of delayed or miscommunicated information on patient outcomes motivated us to create a solution that leverages modern technology to streamline and improve this vital exchange. By integrating real-time data transcription and AI analysis, we aimed to provide healthcare professionals with the tools they need to anticipate and address patient needs more effectively.
+Witnessing the impact of delayed or miscommunicated information on patient outcomes inspired us to create a solution that uses modern technology to streamline and improve this exchange of info. By integrating real-time data transcription and AI analysis, we aim to provide healthcare professionals with the tools they need to anticipate and address patient needs more effectively.
 
-Our goal was to develop a platform that not only bridges communication gaps but also empowers medical teams to deliver faster, more informed care, ultimately saving lives. MedRelay embodies our commitment to pushing the boundaries of what's possible in healthcare communication and making a tangible difference in the communities we serve.
+Our goal was to develop a platform that not only bridges communication gaps but also provides medical teams with the tools to deliver faster, more informed care, ultimately saving lives. MedRelay embodies our commitment to pushing the boundaries of what's possible in healthcare communication and making a tangible difference in the communities we serve.
 
 ## Features
 
@@ -27,17 +27,17 @@ Watch our demo video to see MedRelay in action:
 
 Developing MedRelay presented several challenges that pushed our team to innovate and adapt:
 
-- **Real-Time Data Processing**: Implementing a system capable of capturing and transcribing patient data every 2 seconds was a significant technical challenge. Ensuring low latency and high accuracy required optimization of both our data handling processes and the AI model integration.
+- **Real-Time Data Processing**: Implementing a system capable of capturing and transcribing patient data every 2 seconds was a significant technical challenge for us. Ensuring low latency and high accuracy required optimization of both our data handling processes and the AI model integration, which leads us to the next point.
 
-- **AI Integration**: Integrating GPT-4 for real-time analysis of medical data posed difficulties, particularly in balancing speed and accuracy. Our initial attempts using specialized medical language models, such as Medical-Llama, were too slow for our needs, prompting us to fine-tune GPT-4 to meet the demands of real-time processing.
+- **AI Integration**: Integrating GPT-4 for real-time analysis of medical data posed difficulties, particularly in balancing speed and accuracy. Our initial attempts using specialized medical language models, such as Medical-Llama, were too slow for our needs, more or less forcing us to fine-tune GPT-4 to meet the demands of real-time processing.
 
-- **Data Security and Privacy**: Handling sensitive medical information necessitated rigorous data security measures. Ensuring compliance with healthcare regulations and maintaining robust encryption and access controls are going to be essential in building trust with healthcare providers.
+- **Data Security and Privacy**: Handling sensitive medical information requires rigorous data security measures. We used MongoDB, trusted by eBay, Toyota, Uber , and more to ensure secure data handling.
 
-- **User Interface Design**: Creating a customizable and intuitive user interface that meets the diverse needs of healthcare providers was another challenge. We focused on user feedback to refine the Next.js frontend, making it both adaptable and user-friendly.
+- **User Interface Design**: Creating a customizable and intuitive user interface that meets the diverse needs of healthcare providers was another challenge. We had to go through multiple iterations of designs to ensure ambulances and hospitals could accesss what they needed in "5 clicks or less" - login (2 clicks), role button + id (2 clicks), and finally "start recording" - 1 click ( 5 total for ambulance, 4 for hospital). 
 
-- **System Reliability**: Ensuring consistent connectivity and data integrity between ambulances and hospitals required extensive testing and refinement. We developed mechanisms to manage data flow effectively, even in environments with varying network conditions.
+- **System Reliability**: Ensuring consistent connectivity and data integrity between large distances required extensive testing. We developed mechanisms to manage data flow effectively, even in environments with varying network conditions. For example, I (Aayush) was in Hawaii for a break during this time, and we tested it with Michael in California. It worked seamlessly.
 
-Despite these challenges, our team's dedication and collaboration enabled us to create a robust and effective solution that improves healthcare communication.
+Despite these challenges, our dedication and collaboration enabled us to create a robust and effective solution that improves healthcare communication.
 
 ## Innovation
 
