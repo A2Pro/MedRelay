@@ -21,9 +21,9 @@ Our goal was to develop a platform that not only bridges communication gaps but 
 
 ### Demo
 
-Watch our demo video to see MedRelay in action:
-Access our website here: https://main.d2e1li3e1k0bd0.amplifyapp.com/ 
-(Highly Recommend to Host Locally)
+- Watch our demo video to see MedRelay in action:
+- Access our website here: https://main.d2e1li3e1k0bd0.amplifyapp.com/ 
+- (Highly Recommend to Host Locally)
 
 ## Challenges Faced
 
