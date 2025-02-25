@@ -1,6 +1,8 @@
 # MedRelay 🚑🏥👨‍⚕️👩‍⚕️ [Project Start Date: 7/31/2024]
 MedRelay is a platform designed to revolutionize healthcare communication by streamlining the exchange of critical information between ambulances and hospitals. By integrating advanced AI technologies into our app, we enhance the speed and accuracy of emergency responses, therefore helping healthcare professionals make informed decisions swiftly and effectively, saving lives.
 
+### Disclaimer: AI has been used in part to write this readME and the readME only.
+
 ## Inspiration
 
 The inspiration for MedRelay was brought forth from the urgent need to enhance communication in emergency medical situations. During critical moments, every second counts, and we saw the limitations of traditional two-way radios in providing timely and accurate information between ambulances and hospitals.
